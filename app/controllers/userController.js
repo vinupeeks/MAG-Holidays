@@ -2,9 +2,9 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const authConfig = require('../config/auth.config');
 const db = require('../models/index');
-const { Op, where } = require('sequelize');
 const { getPagination, getPagingData } = require('../helpers/pagination');
 const transporter = require('../helpers/nodeMailer');
+const { where, Op } = require('sequelize');
 const User = db.user;
 const UserRoles = db.userRoles;
 const Roles = db.roles;
@@ -33,8 +33,8 @@ exports.createUser = async (req, res) => {
             email,
             mobile,
             password: hashedPassword,
-            // created_by: req.user.id,
-            // updated_by: req.user.id
+            created_by: req.user.id,
+            updated_by: req.user.id
         });
         const roleDetails = await UserRoles.bulkCreate(roles.map(roleId =>
             ({ user_id: newUser.id, role_id: roleId })));
@@ -86,40 +86,10 @@ exports.loginUser = async (req, res) => {
     }
 };
 
-// List all users  
-// exports.getAllUsers = async (req, res) => {
-
-//     // console.log(req.userRoles);
-//     const { page, size } = req.body;
-//     const { limit, offset } = getPagination(page, size);
-//     let Searchattributes = { limit, offset };
-
-//     try {
-
-//         Searchattributes = {
-//             ...Searchattributes,
-//             where: { status: 'ACTIVE' },
-//             attributes: { exclude: ['password'] },
-//             order: [['id', 'DESC']],
-//             distinct: true,
-//         };
-//         const users = await User.findAndCountAll(Searchattributes);
-
-//         if (users.length === 0) {
-//             return res.status(400).json({ success: false, message: 'No users found..!' });
-//         }
-
-//         const response = getPagingData(users, page, limit);
-//         res.status(200).json({ success: true, data: response, message: 'Users fetched Successfully..!' });
-//     } catch (error) {
-//         res.status(500).json({ message: 'Server error', error });
-//         res.status(500).json({ message: error.message || 'Error fetching users list..!' });
-//     }
-// };
-
+// Get all users list filter=(roles id), filter will be come then fetch filtered users otherwise all users with roles
 exports.getAllUsers = async (req, res) => {
 
-    const { page = 0, size = 25, filter } = req.body || {};
+    const { page, size, filter } = req.body;
     const { limit, offset } = getPagination(page, size);
     let Searchattributes = { limit, offset };
 
@@ -136,17 +106,43 @@ exports.getAllUsers = async (req, res) => {
                     model: Roles,
                     as: 'roles',
                     where: filterId,
-                    attributes: [],
+                    attributes: ['id', 'name', 'label'],
                 },
             ],
         };
-        const users = await User.findAndCountAll(Searchattributes); 
+        const users = await User.findAndCountAll(Searchattributes);
         if (users.length === 0) {
             return res.status(400).json({ success: false, message: 'No users found..!' });
         }
 
         const response = getPagingData(users, page, limit);
         res.status(200).json({ success: true, data: response, message: 'Users fetched Successfully..!' });
+    } catch (error) {
+        res.status(500).json({ message: error.message || 'Error fetching users list..!' });
+    }
+};
+
+// Get all users without ADMINS
+exports.getUsersWithOutAdmins = async (req, res) => {
+
+    try {
+        Searchattributes = {
+            where: { status: 'ACTIVE' },
+            attributes: ['id', 'username', 'name'],
+            order: [['id', 'DESC']],
+            distinct: true,
+            include: [{
+                model: Roles,
+                as: 'roles',
+                where: { name: { [Op.ne]: 'ADMIN' } },
+                attributes: [],
+            }]
+        };
+        const users = await User.findAll(Searchattributes);
+        if (users.length === 0) {
+            return res.status(400).json({ success: false, message: 'No users found..!' });
+        }
+        res.status(200).json({ success: true, data: users, message: 'Users fetched Successfully..!' });
     } catch (error) {
         res.status(500).json({ message: error.message || 'Error fetching users list..!' });
     }

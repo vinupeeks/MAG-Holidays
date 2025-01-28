@@ -1,7 +1,8 @@
-const { where } = require('sequelize');
+const { where, Op } = require('sequelize');
 const db = require('../models/index');
 const { getPagination, getPagingData } = require('../helpers/pagination');
 const Leads = db.leads;
+const User = db.user;
 
 
 // List all leads with pagination 
@@ -10,12 +11,20 @@ exports.leadsList = async (req, res) => {
     const { page, size } = req.body;
     const { limit, offset } = getPagination(page, size);
     let Searchattributes = { limit, offset };
+    const user = req.user.id;
+    const user_roles = req.user_roles;
+    let userLabel = null;
 
     try {
+        if (user_roles && user_roles.length > 0) {
+            const isAdmin = user_roles.some((role) => role.name === 'ADMIN');
+            userLabel = isAdmin ? {} : { assigned_to: user };
+        }
+
         Searchattributes = {
             ...Searchattributes,
-            where: { status: 'ACTIVE' },
             order: [['id', 'DESC']],
+            where: userLabel,
             distinct: true,
         };
 
@@ -33,7 +42,7 @@ exports.leadsList = async (req, res) => {
 
 // creation of leads
 exports.leadsCreation = async (req, res) => {
-    const { first_name, last_name, mobile, email, address } = req.body;
+    const { first_name, last_name, mobile, email, address, travel_type, ticket_type, assigned_to, group } = req.body;
     const user = req.user;
 
     try {
@@ -51,6 +60,10 @@ exports.leadsCreation = async (req, res) => {
             mobile,
             email,
             address,
+            travel_type,
+            ticket_type,
+            assigned_to,
+            group,
             created_by: user.id,
             updated_by: user.id
         });
@@ -68,7 +81,12 @@ exports.leadsDetailsById = async (req, res) => {
 
     try {
         const leadDetails = await Leads.findOne({
-            where: { id, status: 'ACTIVE' }
+            where: {
+                id,
+                status: {
+                    [Op.ne]: 'DELETED',
+                },
+            },
         });
         if (leadDetails === null) {
             return res.status(400).json({ success: false, message: 'Lead not found..!' });

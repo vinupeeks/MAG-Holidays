@@ -6,9 +6,11 @@ const router = express.Router();
 
 router.post('/login', userController.loginUser);
 
-router.post('/creation', userController.createUser);
+router.post('/creation', protectJWT, userController.createUser);
 
 router.post('/list', userController.getAllUsers);
+
+router.get('/employees', userController.getUsersWithOutAdmins);
 
 router.put('/edit/:id', protectJWT, isAdmin, userController.userUpdate);
 

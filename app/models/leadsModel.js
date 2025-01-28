@@ -17,7 +17,6 @@ const Leads = (sequelize, Sequelize) => {
         },
         mobile: {
             type: Sequelize.STRING,
-            unique: true,
             allowNull: false,
         },
         email: {
@@ -27,19 +26,35 @@ const Leads = (sequelize, Sequelize) => {
         },
         address: {
             type: Sequelize.STRING,
-            allowNull: false,
-        }, 
+            allowNull: true,
+        },
+        travel_type: {
+            type: Sequelize.ENUM(`Domestic`, `International`),
+            defaultValue: `Domestic`,
+        },
+        ticket_type: {
+            type: Sequelize.ENUM(`Both`, `Ticket_only`, `Visa_only`),
+            defaultValue: `Both`,
+        },
+        assigned_to: {
+            type: Sequelize.INTEGER,
+            allowNull: true,
+        },
+        group: {
+            type: Sequelize.INTEGER,
+            allowNull: true,
+        },
         created_by: {
             type: Sequelize.INTEGER,
-            allowNull: false,
+            allowNull: true,
         },
         updated_by: {
             type: Sequelize.INTEGER,
-            allowNull: false,
+            allowNull: true,
         },
         status: {
-            type: Sequelize.ENUM(`ACTIVE`, `INACTIVE`, `DELETED`),
-            defaultValue: `ACTIVE`,
+            type: Sequelize.ENUM(`FOLLOW-UP-REQUIRED`, `CONTACTED`, `CONFIRMED`, `INACTIVE`, `DELETED`),
+            defaultValue: `FOLLOW-UP-REQUIRED`,
         },
     },
         {

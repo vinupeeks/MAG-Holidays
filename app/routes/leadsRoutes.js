@@ -4,7 +4,7 @@ const { protectJWT, isAdmin, isUser } = require('../middlewares/authMiddleware.j
 
 const router = express.Router();
 
-router.get('/list', protectJWT, leadsController.leadsList);
+router.post('/list', protectJWT, leadsController.leadsList);
 
 router.post('/creation', protectJWT, leadsController.leadsCreation);
 

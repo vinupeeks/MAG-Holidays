@@ -20,6 +20,23 @@ const protectJWT = async (req, res, next) => {
         if (!user) return res.status(404).json({ message: 'User not found..!' });
 
         req.user = user;
+        if (user) {
+            const roles = await User.findAll({
+                where: { id: req.user.id },
+                include: [
+                    {
+                        model: Roles,
+                        as: 'roles',
+                    }
+                ],
+            })
+            const userRoles = roles[0].roles;
+            const rolesList = userRoles.map((role) => ({
+                id: role.id,
+                name: role.name,
+            }));
+            req.user_roles = rolesList;
+        }
         next();
     } catch (error) {
         res.status(401).json({ message: 'Token failed..!' });
@@ -27,7 +44,6 @@ const protectJWT = async (req, res, next) => {
 };
 
 const rolesList = async (req, res, next) => {
-    console.log(`started`);
 
     const roles = await User.findAll({
         where: { id: req.user.id },
