@@ -118,7 +118,7 @@ exports.loginUser = async (req, res) => {
 // };
 
 exports.getAllUsers = async (req, res) => {
-    
+
     const { page = 0, size = 25, filter } = req.body || {};
     const { limit, offset } = getPagination(page, size);
     let Searchattributes = { limit, offset };
@@ -140,8 +140,7 @@ exports.getAllUsers = async (req, res) => {
                 },
             ],
         };
-        const users = await User.findAndCountAll(Searchattributes);
-        console.log(users);
+        const users = await User.findAndCountAll(Searchattributes); 
         if (users.length === 0) {
             return res.status(400).json({ success: false, message: 'No users found..!' });
         }
