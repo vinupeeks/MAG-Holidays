@@ -13,6 +13,37 @@ const generateToken = (id) => {
     return jwt.sign({ id }, authConfig.JWT_SECRET, { expiresIn: '5d' });
 };
 
+// exports.createUser = async (req, res) => {
+//     const { username, name, email, mobile, password, roles } = req.body;
+//     try {
+//         const uniqueEmail = await User.findOne({ where: { email } });
+//         if (uniqueEmail) {
+//             return res.status(400).json({ message: 'Email already taken..!' });
+//         }
+//         const uniqueUsername = await User.findOne({ where: { username } });
+//         if (uniqueUsername) {
+//             return res.status(400).json({ message: 'Username already taken..!' });
+//         }
+
+//         const hashedPassword = await bcrypt.hash(password, 10);
+//         const newUser = await User.create({
+//             username,
+//             name,
+//             email,
+//             mobile,
+//             password: hashedPassword,
+//             created_by: req.user.id,
+//             updated_by: req.user.id
+//         });
+//         const roleDetails = await UserRoles.bulkCreate(roles.map(roleId =>
+//             ({ user_id: newUser.id, role_id: roleId })));
+
+//         res.status(201).json({ success: true, data: newUser, message: 'User created Successfully..!' });
+//     } catch (error) {
+//         console.error('User creation error:', error);
+//         res.status(500).json({ message: error.message || 'User creation error..!' });
+//     }
+// };
 // Add a new user
 exports.createUser = async (req, res) => {
     const { username, name, email, mobile, password, roles } = req.body;

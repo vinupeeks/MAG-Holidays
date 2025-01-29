@@ -13,18 +13,24 @@ exports.leadsList = async (req, res) => {
     let Searchattributes = { limit, offset };
     const user = req.user.id;
     const user_roles = req.user_roles;
-    let userLabel = null;
+    let whereCondition = {};
+    let includeOption = null;
 
     try {
         if (user_roles && user_roles.length > 0) {
             const isAdmin = user_roles.some((role) => role.name === 'ADMIN');
-            userLabel = isAdmin ? {} : { assigned_to: user };
-        }
 
+            if (isAdmin) {
+                includeOption = [{ model: User, as: 'assignedTo', attributes: ['id', 'username'] }];
+            } else {
+                whereCondition = { assigned_to: user };
+            }
+        }
         Searchattributes = {
             ...Searchattributes,
             order: [['id', 'DESC']],
-            where: userLabel,
+            where: whereCondition,
+            include: includeOption || undefined,
             distinct: true,
         };
 
@@ -42,7 +48,7 @@ exports.leadsList = async (req, res) => {
 
 // creation of leads
 exports.leadsCreation = async (req, res) => {
-    const { first_name, last_name, mobile, email, address, travel_type, ticket_type, assigned_to, group } = req.body;
+    const { first_name, last_name, mobile, age, email, address, travel_type, ticket_type, assigned_to, group } = req.body;
     const user = req.user;
 
     try {
@@ -59,6 +65,7 @@ exports.leadsCreation = async (req, res) => {
             last_name,
             mobile,
             email,
+            age,
             address,
             travel_type,
             ticket_type,
@@ -99,17 +106,15 @@ exports.leadsDetailsById = async (req, res) => {
 };
 // leads Updation by Id
 exports.leadsUpdation = async (req, res) => {
-    const { first_name, last_name, mobile, email, address } = req.body;
+    const { first_name, last_name, mobile, email, age, address, travel_type, ticket_type, assigned_to, status } = req.body;
     const id = req.params.id;
     const user = req.user;
 
     try {
-        const userData = await Leads.findByPk(id, { attributes: { exclude: ['password'] } });
-
+        const userData = await Leads.findByPk(id);
         if (!userData) {
             return res.status(404).json({ success: false, message: 'User not found..!' });
         }
-
         if (email) {
             const existingEmail = await Leads.findOne({ where: { email: email } });
             if (existingEmail && existingEmail.id !== parseInt(id)) {
@@ -133,18 +138,19 @@ exports.leadsUpdation = async (req, res) => {
             last_name,
             mobile,
             email,
+            age,
             address,
+            travel_type,
+            ticket_type,
+            assigned_to,
+            status,
             updated_by: user.id
         };
         const [updatedRows] = await Leads.update(updateData, { where: { id } });
-
         if (!updatedRows) {
             return res.status(400).json({ success: false, message: 'Update failed..!' });
         }
-        const leadDetails = await Leads.findByPk(id, {
-            attributes: { exclude: ['password'] }
-        });
-
+        const leadDetails = await Leads.findByPk(id);
         res.status(201).json({ success: true, data: leadDetails, message: 'Lead updated Successfully..!' });
     } catch (error) {
         console.error('Lead updation error:', error);
@@ -176,3 +182,58 @@ exports.leadsDeletion = async (req, res) => {
         res.status(500).json({ success: false, message: error.message || 'Error deleting lead..!' });
     }
 };
+
+
+// // Group Leads creation
+// exports.groupLeadsCreation = async (req, res) => {
+//     const leadsData = req.body;
+//     const user = req.user;
+
+//     if (!Array.isArray(leadsData) || leadsData.length === 0) {
+//         return res.status(400).json({ success: false, message: "Invalid input data" });
+//     }
+
+//     try {
+//         let groupId;
+//         for (let index = 0; index < leadsData.length; index++) {
+//             const { first_name, last_name, mobile, email, address, travel_type, ticket_type, assigned_to } = leadsData[index];
+
+//             const emailExists = await Leads.findOne({ where: { email } });
+//             if (emailExists) {
+//                 return res.status(400).json({ success: false, message: `Email already taken: ${email}` });
+//             }
+
+//             // Check for duplicate mobile number
+//             const mobileExists = await Leads.findOne({ where: { mobile } });
+//             if (mobileExists) {
+//                 return res.status(400).json({ success: false, message: `Mobile Number already taken: ${mobile}` });
+//             }
+
+//             // Create the lead
+//             const newLead = await Leads.create({
+//                 first_name,
+//                 last_name,
+//                 mobile,
+//                 email,
+//                 address,
+//                 travel_type,
+//                 ticket_type,
+//                 assigned_to,
+//                 group: index === 0 ? null : groupId, // First person gets null initially
+//                 created_by: user.id,
+//                 updated_by: user.id
+//             });
+
+//             // If it's the first lead, update its group ID with its own ID
+//             if (index === 0) {
+//                 groupId = newLead.id;
+//                 await newLead.update({ group: groupId });
+//             }
+//         }
+
+//         res.status(201).json({ success: true, message: 'Leads created successfully with grouping!' });
+//     } catch (error) {
+//         console.error('Lead creation error:', error);
+//         res.status(500).json({ success: false, message: error.message || 'Error in lead creation!' });
+//     }
+// };

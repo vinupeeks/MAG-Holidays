@@ -24,6 +24,10 @@ const Leads = (sequelize, Sequelize) => {
             allowNull: false,
             unique: true,
         },
+        age: {
+            type: Sequelize.INTEGER,
+            allowNull: true,
+        },
         address: {
             type: Sequelize.STRING,
             allowNull: true,
