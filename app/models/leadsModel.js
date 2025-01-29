@@ -44,9 +44,13 @@ const Leads = (sequelize, Sequelize) => {
             type: Sequelize.INTEGER,
             allowNull: true,
         },
-        group: {
-            type: Sequelize.INTEGER,
+        mag_id: {
+            type: Sequelize.STRING,
             allowNull: true,
+        },
+        leader: {
+            type: Sequelize.ENUM(`YES`,`NO`),
+            defaultValue: `NO`,
         },
         created_by: {
             type: Sequelize.INTEGER,

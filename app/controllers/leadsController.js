@@ -1,6 +1,7 @@
 const { where, Op } = require('sequelize');
 const db = require('../models/index');
 const { getPagination, getPagingData } = require('../helpers/pagination');
+const moment = require('moment');
 const Leads = db.leads;
 const User = db.user;
 
@@ -13,7 +14,8 @@ exports.leadsList = async (req, res) => {
     let Searchattributes = { limit, offset };
     const user = req.user.id;
     const user_roles = req.user_roles;
-    let whereCondition = {};
+    // let whereCondition = {};
+    let whereCondition
     let includeOption = null;
 
     try {
@@ -21,7 +23,7 @@ exports.leadsList = async (req, res) => {
             const isAdmin = user_roles.some((role) => role.name === 'ADMIN');
 
             if (isAdmin) {
-                includeOption = [{ model: User, as: 'assignedTo', attributes: ['id', 'username'] }];
+                includeOption = [{ model: User, as: 'assignedTo', attributes: ['id', 'username', 'name'] }];
             } else {
                 whereCondition = { assigned_to: user };
             }
@@ -29,7 +31,13 @@ exports.leadsList = async (req, res) => {
         Searchattributes = {
             ...Searchattributes,
             order: [['id', 'DESC']],
-            where: whereCondition,
+            where: {
+                ...whereCondition,
+                [Op.or]: [
+                    { mag_id: null },
+                    { leader: 'YES' }
+                ]
+            },
             include: includeOption || undefined,
             distinct: true,
         };
@@ -70,7 +78,7 @@ exports.leadsCreation = async (req, res) => {
             travel_type,
             ticket_type,
             assigned_to,
-            group,
+            // group,
             created_by: user.id,
             updated_by: user.id
         });
@@ -183,57 +191,83 @@ exports.leadsDeletion = async (req, res) => {
     }
 };
 
-
 // // Group Leads creation
-// exports.groupLeadsCreation = async (req, res) => {
-//     const leadsData = req.body;
-//     const user = req.user;
+exports.groupLeadsCreation = async (req, res) => {
+    const leadsData = req.body;
+    const user = req.user;
 
-//     if (!Array.isArray(leadsData) || leadsData.length === 0) {
-//         return res.status(400).json({ success: false, message: "Invalid input data" });
-//     }
+    if (!Array.isArray(leadsData) || leadsData.length === 0) {
+        return res.status(400).json({ success: false, message: "Invalid input data" });
+    }
 
-//     try {
-//         let groupId;
-//         for (let index = 0; index < leadsData.length; index++) {
-//             const { first_name, last_name, mobile, email, address, travel_type, ticket_type, assigned_to } = leadsData[index];
+    try {
+        let groupId;
+        let leadIds = [];
+        function generateUniqueNumber() {
+            return `MAG${moment().format('YYYYMMDDHHmmssSSS')}`;
+        }
 
-//             const emailExists = await Leads.findOne({ where: { email } });
-//             if (emailExists) {
-//                 return res.status(400).json({ success: false, message: `Email already taken: ${email}` });
-//             }
+        groupId = generateUniqueNumber();
+        for (let index = 0; index < leadsData.length; index++) {
+            const { first_name, last_name, mobile, email, address, leader, travel_type, ticket_type, assigned_to } = leadsData[index];
 
-//             // Check for duplicate mobile number
-//             const mobileExists = await Leads.findOne({ where: { mobile } });
-//             if (mobileExists) {
-//                 return res.status(400).json({ success: false, message: `Mobile Number already taken: ${mobile}` });
-//             }
+            const emailExists = await Leads.findOne({ where: { email } });
+            if (emailExists) {
+                return res.status(400).json({ success: false, message: `Email already taken: ${email}` });
+            }
+            const mobileExists = await Leads.findOne({ where: { mobile } });
+            if (mobileExists) {
+                return res.status(400).json({ success: false, message: `Mobile Number already taken: ${mobile}` });
+            }
 
-//             // Create the lead
-//             const newLead = await Leads.create({
-//                 first_name,
-//                 last_name,
-//                 mobile,
-//                 email,
-//                 address,
-//                 travel_type,
-//                 ticket_type,
-//                 assigned_to,
-//                 group: index === 0 ? null : groupId, // First person gets null initially
-//                 created_by: user.id,
-//                 updated_by: user.id
-//             });
+            const newLead = await Leads.create({
+                first_name,
+                last_name,
+                mobile,
+                email,
+                address,
+                travel_type,
+                ticket_type,
+                assigned_to,
+                mag_id: groupId,
+                // leader: index === 0 ? 'YES' : 'NO',
+                leader: leader ? leader : 'NO',
+                created_by: user.id,
+                updated_by: user.id
+            });
+            leadIds.push(newLead);
+        }
 
-//             // If it's the first lead, update its group ID with its own ID
-//             if (index === 0) {
-//                 groupId = newLead.id;
-//                 await newLead.update({ group: groupId });
-//             }
-//         }
+        res.status(201).json({ success: true, data: leadIds, message: 'Leads created successfully with grouping!' });
+    } catch (error) {
+        console.error('Lead creation error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Error in lead creation!' });
+    }
+};
 
-//         res.status(201).json({ success: true, message: 'Leads created successfully with grouping!' });
-//     } catch (error) {
-//         console.error('Lead creation error:', error);
-//         res.status(500).json({ success: false, message: error.message || 'Error in lead creation!' });
-//     }
-// };
+// group members list using leader ID
+exports.getGroupMembers = async (req, res) => {
+    const leaderId = req.params.id;
+
+    try {
+        if (!leaderId) {
+            return res.status(400).json({ message: "leaderId is required" });
+        }
+        const leaderDetails = await Leads.findOne({ where: { id: leaderId } });
+        if (!leaderDetails.leader === 'YES') {
+            return res.status(400).json({ message: "The provided leaderId is not a leader" });
+        }
+        const mag_id = leaderDetails.mag_id;
+        const members = await Leads.findAll({
+            where: { mag_id }
+        });
+        if (members.length === 0) {
+            return res.status(404).json({ message: "No members found for this leader" });
+        }
+
+        res.status(201).json({ success: true, data: members, message: 'Leads members fetched successfully..!' });
+    } catch (error) {
+        console.error('Leads members fetch error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Error in leads members fetching..!' });
+    }
+};
