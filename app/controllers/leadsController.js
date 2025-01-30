@@ -6,53 +6,78 @@ const Leads = db.leads;
 const User = db.user;
 
 
+
+
 // List all leads with pagination 
 exports.leadsList = async (req, res) => {
-
-    const { page, size } = req.body;
-    const { limit, offset } = getPagination(page, size);
-    let Searchattributes = { limit, offset };
-    const user = req.user.id;
-    const user_roles = req.user_roles;
-    // let whereCondition = {};
-    let whereCondition
-    let includeOption = null;
-
     try {
+        const { page, size, ...searchParams } = req.body || {}; 
+        const { limit, offset } = getPagination(page, size);
+        let Searchattributes = { limit, offset };
+        const user = req.user.id;
+        const user_roles = req.user_roles;
+ 
+        const whereCondition = {};
+        const {
+            first_name,
+            mobile,
+            email,
+            age,
+            address,
+            travel_type,
+            ticket_type,
+            assigned_to,
+            leader,
+            status
+        } = searchParams;
+
+        if (first_name) whereCondition.first_name = { [Op.like]: `%${first_name}%` };
+        if (mobile) whereCondition.mobile = { [Op.like]: `%${mobile}%` };
+        if (email) whereCondition.email = { [Op.like]: `%${email}%` };
+        if (age) whereCondition.age = age;
+        if (address) whereCondition.address = { [Op.like]: `%${address}%` };
+        if (travel_type) whereCondition.travel_type = travel_type;
+        if (ticket_type) whereCondition.ticket_type = ticket_type;
+        if (assigned_to) whereCondition.assigned_to = assigned_to;
+        if (leader) whereCondition.leader = leader;
+        if (status) whereCondition.status = status;
+
+        let includeOption = null;
+
         if (user_roles && user_roles.length > 0) {
             const isAdmin = user_roles.some((role) => role.name === 'ADMIN');
 
             if (isAdmin) {
                 includeOption = [{ model: User, as: 'assignedTo', attributes: ['id', 'username', 'name'] }];
             } else {
-                whereCondition = { assigned_to: user };
+                whereCondition.assigned_to = user;
             }
         }
+
         Searchattributes = {
             ...Searchattributes,
             order: [['id', 'DESC']],
             where: {
                 ...whereCondition,
-                [Op.or]: [
-                    { mag_id: null },
-                    { leader: 'YES' }
-                ]
+                [Op.or]: [{ mag_id: null }, { leader: 'YES' }]
             },
             include: includeOption || undefined,
             distinct: true,
         };
-
+ 
         const leads = await Leads.findAndCountAll(Searchattributes);
-        if (leads.length === 0) {
+        if (!leads.rows || leads.rows.length === 0) {
             return res.status(400).json({ success: false, message: 'No Leads found..!' });
         }
 
         const response = getPagingData(leads, page, limit);
         res.status(200).json({ success: true, data: response, message: 'Leads fetched Successfully..!' });
     } catch (error) {
+        console.error("Error in leadsList:", error);
         res.status(500).json({ success: false, message: error.message || 'Error fetching Leads list..!' });
     }
 };
+
 
 // creation of leads
 exports.leadsCreation = async (req, res) => {
@@ -269,5 +294,40 @@ exports.getGroupMembers = async (req, res) => {
     } catch (error) {
         console.error('Leads members fetch error:', error);
         res.status(500).json({ success: false, message: error.message || 'Error in leads members fetching..!' });
+    }
+};
+
+exports.filterLeads = async (req, res) => {
+    try {
+        const {
+            first_name,
+            mobile,
+            email,
+            age,
+            address,
+            travel_type,
+            ticket_type,
+            assigned_to,
+            leader,
+            status
+        } = req.body;
+        const whereCondition = {};
+
+        if (first_name) whereCondition.first_name = { [Op.like]: `%${first_name}%` };
+        if (mobile) whereCondition.mobile = { [Op.like]: `%${mobile}%` };
+        if (email) whereCondition.email = { [Op.like]: `%${email}%` };
+        if (age) whereCondition.age = age;
+        if (address) whereCondition.address = { [Op.like]: `%${address}%` };
+        if (travel_type) whereCondition.travel_type = travel_type;
+        if (ticket_type) whereCondition.ticket_type = ticket_type;
+        if (assigned_to) whereCondition.assigned_to = assigned_to;
+        if (leader) whereCondition.leader = leader;
+        if (status) whereCondition.status = status;
+
+        const leads = await Leads.findAll({ where: whereCondition });
+
+        return res.status(200).json({ success: true, data: leads, message: 'Leads fetched successfully..!' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message || 'Error in leads fetching..!' });
     }
 };

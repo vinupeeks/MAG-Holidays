@@ -12,6 +12,8 @@ router.post('/creation/group', protectJWT, leadsController.groupLeadsCreation);
 
 router.get('/group/members/:id', protectJWT, leadsController.getGroupMembers);
 
+router.post('/filter', leadsController.filterLeads);
+
 router.get('/details/:id', protectJWT, leadsController.leadsDetailsById);
 
 router.put('/edit/:id', protectJWT, leadsController.leadsUpdation);
