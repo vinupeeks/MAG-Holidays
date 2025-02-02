@@ -30,9 +30,10 @@ app.get('/', (req, res) => {
     res.send('Back end is running..!')
 })
 
-app.use('/users',require('./app/routes/userRoutes.js'));
-app.use('/roles',require('./app/routes/rolesRoutes.js'));
-app.use('/leads',require('./app/routes/leadsRoutes.js'));
+app.use('/users', require('./app/routes/userRoutes.js'));
+app.use('/roles', require('./app/routes/rolesRoutes.js'));
+app.use('/leads', require('./app/routes/leadsRoutes.js'));
+app.use('/leads/folowup', require('./app/routes/leadsFollowUpRoutes.js'));
 
 
 const PORT = process.env.PORT || 5000;

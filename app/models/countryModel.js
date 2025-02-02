@@ -1,27 +1,15 @@
-const User = (sequelize, Sequelize) => {
-    const user = sequelize.define("user", {
+const Country = (sequelize, Sequelize) => {
+    const status = sequelize.define("status", {
         id: {
             type: Sequelize.INTEGER,
             primaryKey: true,
             autoIncrement: true,
         },
-        username: {
-            type: Sequelize.STRING, 
-            allowNull: false,
-        },
         name: {
             type: Sequelize.STRING,
             allowNull: false,
         },
-        email: {
-            type: Sequelize.STRING,
-            allowNull: false, 
-        },
-        mobile: {
-            type: Sequelize.STRING, 
-            allowNull: false,
-        },
-        password: {
+        label: {
             type: Sequelize.STRING,
             allowNull: false,
         },
@@ -39,9 +27,9 @@ const User = (sequelize, Sequelize) => {
         },
     },
         {
-            timestamps: true,
+            timestamps: false,
         });
-    return user;
+    return status;
 };
 
-module.exports = User;
+module.exports = Country;

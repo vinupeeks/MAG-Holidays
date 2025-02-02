@@ -1,5 +1,3 @@
-const bcrypt = require('bcryptjs');
-
 const Leads = (sequelize, Sequelize) => {
     const leads = sequelize.define("leads", {
         id: {
@@ -22,7 +20,6 @@ const Leads = (sequelize, Sequelize) => {
         email: {
             type: Sequelize.STRING,
             allowNull: false,
-            unique: true,
         },
         age: {
             type: Sequelize.INTEGER,
@@ -33,8 +30,8 @@ const Leads = (sequelize, Sequelize) => {
             allowNull: true,
         },
         travel_type: {
-            type: Sequelize.ENUM(`Domestic`, `International`),
-            defaultValue: `Domestic`,
+            type: Sequelize.INTEGER,
+            allowNull: true,
         },
         ticket_type: {
             type: Sequelize.ENUM(`Both`, `Ticket_only`, `Visa_only`),
@@ -44,13 +41,17 @@ const Leads = (sequelize, Sequelize) => {
             type: Sequelize.INTEGER,
             allowNull: true,
         },
-        mag_id: {
-            type: Sequelize.STRING,
+        leader: {
+            type: Sequelize.ENUM(`YES`, `NO`),
+            defaultValue: `NO`,
+        },
+        lead_status: {
+            type: Sequelize.INTEGER,
             allowNull: true,
         },
-        leader: {
-            type: Sequelize.ENUM(`YES`,`NO`),
-            defaultValue: `NO`,
+        status: {
+            type: Sequelize.ENUM(`ACTIVE`, `INACTIVE`, `DELETED`),
+            defaultValue: `ACTIVE`,
         },
         created_by: {
             type: Sequelize.INTEGER,
@@ -59,10 +60,6 @@ const Leads = (sequelize, Sequelize) => {
         updated_by: {
             type: Sequelize.INTEGER,
             allowNull: true,
-        },
-        status: {
-            type: Sequelize.ENUM(`FOLLOW-UP-REQUIRED`, `CONTACTED`, `CONFIRMED`, `INACTIVE`, `DELETED`),
-            defaultValue: `FOLLOW-UP-REQUIRED`,
         },
     },
         {

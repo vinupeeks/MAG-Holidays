@@ -4,20 +4,19 @@ const { getPagination, getPagingData } = require('../helpers/pagination');
 const moment = require('moment');
 const Leads = db.leads;
 const User = db.user;
-
-
+const Status = db.status;
 
 
 // List all leads with pagination 
 exports.leadsList = async (req, res) => {
     try {
-        const { page, size, ...searchParams } = req.body || {}; 
+        const { page, size, ...searchParams } = req.body || {};
         const { limit, offset } = getPagination(page, size);
         let Searchattributes = { limit, offset };
         const user = req.user.id;
         const user_roles = req.user_roles;
- 
-        const whereCondition = {};
+
+        const whereCondition = { status: 'ACTIVE' };
         const {
             first_name,
             mobile,
@@ -28,7 +27,7 @@ exports.leadsList = async (req, res) => {
             ticket_type,
             assigned_to,
             leader,
-            status
+            lead_status
         } = searchParams;
 
         if (first_name) whereCondition.first_name = { [Op.like]: `%${first_name}%` };
@@ -40,7 +39,7 @@ exports.leadsList = async (req, res) => {
         if (ticket_type) whereCondition.ticket_type = ticket_type;
         if (assigned_to) whereCondition.assigned_to = assigned_to;
         if (leader) whereCondition.leader = leader;
-        if (status) whereCondition.status = status;
+        if (lead_status) whereCondition.lead_status = lead_status;
 
         let includeOption = null;
 
@@ -64,7 +63,7 @@ exports.leadsList = async (req, res) => {
             include: includeOption || undefined,
             distinct: true,
         };
- 
+
         const leads = await Leads.findAndCountAll(Searchattributes);
         if (!leads.rows || leads.rows.length === 0) {
             return res.status(400).json({ success: false, message: 'No Leads found..!' });
@@ -78,10 +77,9 @@ exports.leadsList = async (req, res) => {
     }
 };
 
-
 // creation of leads
 exports.leadsCreation = async (req, res) => {
-    const { first_name, last_name, mobile, age, email, address, travel_type, ticket_type, assigned_to, group } = req.body;
+    const { first_name, last_name, mobile, age, email, address, lead_status, travel_type, ticket_type, assigned_to } = req.body;
     const user = req.user;
 
     try {
@@ -103,7 +101,7 @@ exports.leadsCreation = async (req, res) => {
             travel_type,
             ticket_type,
             assigned_to,
-            // group,
+            lead_status: lead_status,
             created_by: user.id,
             updated_by: user.id
         });
@@ -124,9 +122,13 @@ exports.leadsDetailsById = async (req, res) => {
             where: {
                 id,
                 status: {
-                    [Op.ne]: 'DELETED',
+                    [Op.eq]: 'ACTIVE',
                 },
             },
+            include: [{
+                model: Status,
+                as: 'leadStatus',
+            }],
         });
         if (leadDetails === null) {
             return res.status(400).json({ success: false, message: 'Lead not found..!' });
@@ -139,7 +141,7 @@ exports.leadsDetailsById = async (req, res) => {
 };
 // leads Updation by Id
 exports.leadsUpdation = async (req, res) => {
-    const { first_name, last_name, mobile, email, age, address, travel_type, ticket_type, assigned_to, status } = req.body;
+    const { first_name, last_name, mobile, email, age, address, travel_type, ticket_type, assigned_to, lead_status, status } = req.body;
     const id = req.params.id;
     const user = req.user;
 
@@ -176,6 +178,7 @@ exports.leadsUpdation = async (req, res) => {
             travel_type,
             ticket_type,
             assigned_to,
+            lead_status,
             status,
             updated_by: user.id
         };
@@ -294,40 +297,5 @@ exports.getGroupMembers = async (req, res) => {
     } catch (error) {
         console.error('Leads members fetch error:', error);
         res.status(500).json({ success: false, message: error.message || 'Error in leads members fetching..!' });
-    }
-};
-
-exports.filterLeads = async (req, res) => {
-    try {
-        const {
-            first_name,
-            mobile,
-            email,
-            age,
-            address,
-            travel_type,
-            ticket_type,
-            assigned_to,
-            leader,
-            status
-        } = req.body;
-        const whereCondition = {};
-
-        if (first_name) whereCondition.first_name = { [Op.like]: `%${first_name}%` };
-        if (mobile) whereCondition.mobile = { [Op.like]: `%${mobile}%` };
-        if (email) whereCondition.email = { [Op.like]: `%${email}%` };
-        if (age) whereCondition.age = age;
-        if (address) whereCondition.address = { [Op.like]: `%${address}%` };
-        if (travel_type) whereCondition.travel_type = travel_type;
-        if (ticket_type) whereCondition.ticket_type = ticket_type;
-        if (assigned_to) whereCondition.assigned_to = assigned_to;
-        if (leader) whereCondition.leader = leader;
-        if (status) whereCondition.status = status;
-
-        const leads = await Leads.findAll({ where: whereCondition });
-
-        return res.status(200).json({ success: true, data: leads, message: 'Leads fetched successfully..!' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message || 'Error in leads fetching..!' });
     }
 };

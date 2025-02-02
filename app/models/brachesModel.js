@@ -1,27 +1,27 @@
-const User = (sequelize, Sequelize) => {
-    const user = sequelize.define("user", {
+const Braches = (sequelize, Sequelize) => {
+    const braches = sequelize.define("braches", {
         id: {
             type: Sequelize.INTEGER,
             primaryKey: true,
             autoIncrement: true,
         },
-        username: {
-            type: Sequelize.STRING, 
-            allowNull: false,
-        },
         name: {
             type: Sequelize.STRING,
             allowNull: false,
         },
-        email: {
+        location: {
             type: Sequelize.STRING,
-            allowNull: false, 
-        },
-        mobile: {
-            type: Sequelize.STRING, 
             allowNull: false,
         },
-        password: {
+        mobile: {
+            type: Sequelize.INTEGER,
+            allowNull: false,
+        },
+        email: {
+            type: Sequelize.STRING,
+            allowNull: false,
+        },
+        address: {
             type: Sequelize.STRING,
             allowNull: false,
         },
@@ -39,9 +39,9 @@ const User = (sequelize, Sequelize) => {
         },
     },
         {
-            timestamps: true,
+            timestamps: false,
         });
-    return user;
+    return braches;
 };
 
-module.exports = User;
+module.exports = Braches;
