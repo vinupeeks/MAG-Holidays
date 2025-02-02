@@ -47,7 +47,7 @@ const TourPackages = (sequelize, Sequelize) => {
         },
     },
         {
-            timestamps: false,
+            timestamps: true,
             uniqueKeys: {
                 uniquetourPackages: {
                     fields: ['lead_id', 'created_by', 'updated_by']

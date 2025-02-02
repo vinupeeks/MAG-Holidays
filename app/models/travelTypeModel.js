@@ -27,7 +27,7 @@ const TravelType = (sequelize, Sequelize) => {
         },
     },
         {
-            timestamps: false,
+            timestamps: true,
         });
     return TravelType;
 };

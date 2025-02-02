@@ -1,5 +1,5 @@
 const Country = (sequelize, Sequelize) => {
-    const status = sequelize.define("status", {
+    const country = sequelize.define("country", {
         id: {
             type: Sequelize.INTEGER,
             primaryKey: true,
@@ -9,7 +9,11 @@ const Country = (sequelize, Sequelize) => {
             type: Sequelize.STRING,
             allowNull: false,
         },
-        label: {
+        code: {
+            type: Sequelize.STRING,
+            allowNull: false,
+        },
+        icon: {
             type: Sequelize.STRING,
             allowNull: false,
         },
@@ -27,9 +31,9 @@ const Country = (sequelize, Sequelize) => {
         },
     },
         {
-            timestamps: false,
+            timestamps: true,
         });
-    return status;
+    return country;
 };
 
 module.exports = Country;

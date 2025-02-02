@@ -35,7 +35,7 @@ const LeadsFollowUp = (sequelize, Sequelize) => {
         },
     },
         {
-            timestamps: false,
+            timestamps: true,
             uniqueKeys: {
                 uniqueLeadFollowUp: {
                     fields: ['lead_id', 'created_by', 'updated_by']

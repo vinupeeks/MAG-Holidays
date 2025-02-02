@@ -27,10 +27,11 @@ db.user = require('./userModel')(sequelize, Sequelize);
 db.roles = require('./roleModel')(sequelize, Sequelize);
 db.userRoles = require('./userRolesModel')(sequelize, Sequelize);
 db.leads = require('./leadsModel')(sequelize, Sequelize);
+db.branches=require('./brachesModel')(sequelize, Sequelize);
 db.leadFollowUp = require('./leadFollowUpModel')(sequelize, Sequelize);
 db.status = require('./statusModel')(sequelize, Sequelize);
 
-
+ 
 // relation of  User Table
 db.roles.belongsToMany(db.user, { through: db.userRoles, as: 'users', foreignKey: 'role_id' });
 db.user.belongsToMany(db.roles, { through: db.userRoles, as: 'roles', foreignKey: 'user_id' });
