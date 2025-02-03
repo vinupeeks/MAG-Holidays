@@ -34,6 +34,8 @@ app.use('/users', require('./app/routes/userRoutes.js'));
 app.use('/roles', require('./app/routes/rolesRoutes.js'));
 app.use('/branches', require('./app/routes/branchesRoutes.js'));
 app.use('/leads', require('./app/routes/leadsRoutes.js'));
+app.use('/country', require('./app/routes/countryRoutes.js'));
+
 app.use('/leads/folowup', require('./app/routes/leadsFollowUpRoutes.js'));
 
 
