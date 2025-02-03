@@ -6,6 +6,7 @@ const Leads = db.leads;
 const User = db.user;
 const Status = db.status;
 const TourPackages = db.tourPackages;
+const Members = db.members;
 
 
 // List all leads with pagination 
@@ -123,7 +124,7 @@ exports.leadsCreation = async (req, res) => {
             travel_to_date,
             created_by: user.id,
             updated_by: user.id
-        }); 
+        });
 
         res.status(201).json({ success: true, data: newLead, message: 'User created Successfully..!' });
     } catch (error) {
@@ -153,12 +154,14 @@ exports.leadsDetailsById = async (req, res) => {
                 {
                     model: TourPackages,
                     as: 'packageId',
-                    // attributes: ['id', 'name', 'email', 'mobile'],
                 },
                 {
                     model: Status,
                     as: 'statusId',
                     attributes: ['id', 'name', 'label'],
+                },
+                {
+                    model: Members,
                 }
             ],
         });
@@ -258,55 +261,38 @@ exports.leadsDeletion = async (req, res) => {
 
 // // Group Leads creation
 exports.groupLeadsCreation = async (req, res) => {
-    const leadsData = req.body;
+    const leadsList = req.body.leads;
     const user = req.user;
 
-    if (!Array.isArray(leadsData) || leadsData.length === 0) {
-        return res.status(400).json({ success: false, message: "Invalid input data" });
-    }
-
     try {
-        let groupId;
-        let leadIds = [];
-        function generateUniqueNumber() {
-            return `MAG${moment().format('YYYYMMDDHHmmssSSS')}`;
+        if (!Array.isArray(leadsList) || leadsList.length === 0) {
+            return res.status(400).json({ message: "Invalid leads data." });
+        }
+        const leaderData = leadsList.find(lead => lead.leader === "YES");
+        if (!leaderData) {
+            return res.status(400).json({ message: "No leader found in the provided leads." });
         }
 
-        groupId = generateUniqueNumber();
-        for (let index = 0; index < leadsData.length; index++) {
-            const { first_name, last_name, mobile, email, address, leader, travel_type, ticket_type, assigned_to } = leadsData[index];
+        const leader = await Leads.create({
+            ...leaderData,
+            created_by: user.id,
+            updated_by: user.id
+        });
+        const membersData = leadsList.filter(lead => lead.leader !== "YES");
 
-            const emailExists = await Leads.findOne({ where: { email } });
-            if (emailExists) {
-                return res.status(400).json({ success: false, message: `Email already taken: ${email}` });
-            }
-            const mobileExists = await Leads.findOne({ where: { mobile } });
-            if (mobileExists) {
-                return res.status(400).json({ success: false, message: `Mobile Number already taken: ${mobile}` });
-            }
+        const members = membersData.map(member => ({
+            ...member,
+            leader_id: leader.id,
+            created_by: user.id,
+            updated_by: user.id
+        }));
 
-            const newLead = await Leads.create({
-                first_name,
-                last_name,
-                mobile,
-                email,
-                address,
-                travel_type,
-                ticket_type,
-                assigned_to,
-                mag_id: groupId,
-                // leader: index === 0 ? 'YES' : 'NO',
-                leader: leader ? leader : 'NO',
-                created_by: user.id,
-                updated_by: user.id
-            });
-            leadIds.push(newLead);
+        if (members.length > 0) {
+            await Members.bulkCreate(members);
         }
-
-        res.status(201).json({ success: true, data: leadIds, message: 'Leads created successfully with grouping!' });
+        return res.status(201).json({ success: true, message: "Leads and members saved successfully." });
     } catch (error) {
-        console.error('Lead creation error:', error);
-        res.status(500).json({ success: false, message: error.message || 'Error in lead creation!' });
+        res.status(500).json({ success: false, message: error.message || 'Error saving group list..!' });
     }
 };
 
@@ -322,10 +308,7 @@ exports.getGroupMembers = async (req, res) => {
         if (!leaderDetails.leader === 'YES') {
             return res.status(400).json({ message: "The provided leaderId is not a leader" });
         }
-        const mag_id = leaderDetails.mag_id;
-        const members = await Leads.findAll({
-            where: { mag_id }
-        });
+        const members = await Members.findAndCountAll({ where: { leader_id: leaderId } });
         if (members.length === 0) {
             return res.status(404).json({ message: "No members found for this leader" });
         }
