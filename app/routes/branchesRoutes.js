@@ -1,7 +1,6 @@
 const express = require('express');
 const { protectJWT } = require('../middlewares/authMiddleware.js');
-const branchesController = require('../controllers/branchesController.js');
-const { route } = require('./userRoutes.js');
+const branchesController = require('../controllers/branchesController.js'); 
 
 const router = express.Router();
 

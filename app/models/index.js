@@ -39,6 +39,7 @@ db.userRoles = require('./userRolesModel')(sequelize, Sequelize);
 db.roles.belongsToMany(db.user, { through: db.userRoles, as: 'users', foreignKey: 'role_id' });
 db.user.belongsToMany(db.roles, { through: db.userRoles, as: 'roles', foreignKey: 'user_id' });
 
+
 // relation of leads Table
 db.user.hasMany(db.leads, { foreignKey: 'assigned_to' });
 db.leads.belongsTo(db.user, { as: "assignedTo", foreignKey: 'assigned_to' });
@@ -49,8 +50,12 @@ db.leads.belongsTo(db.user, { as: "createdBy", foreignKey: 'created_by' });
 db.user.hasMany(db.leads, { foreignKey: 'updated_by' });
 db.leads.belongsTo(db.user, { as: "updatedBy", foreignKey: 'updated_by' });
 
-db.status.hasMany(db.leads, { foreignKey: 'lead_status' });
-db.leads.belongsTo(db.status, { as: "leadStatus", foreignKey: 'lead_status' });
+db.status.hasMany(db.leads, { foreignKey: 'status_id' });
+db.leads.belongsTo(db.status, { as: "statusId", foreignKey: 'status_id' });
+
+db.tourPackages.hasMany(db.leads, { foreignKey: 'package_id' });
+db.leads.belongsTo(db.tourPackages, { as: "packageId", foreignKey: 'package_id' });
+
 
 // relation of leadFollowUp Table
 db.leads.hasMany(db.leadFollowUp, { foreignKey: 'lead_id' });

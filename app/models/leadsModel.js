@@ -46,6 +46,14 @@ const Leads = (sequelize, Sequelize) => {
             defaultValue: `NO`,
         },
         lead_status: {
+            type: Sequelize.ENUM(`HOT`, `WARM`, `COLD`),
+            defaultValue: `HOT`,
+        },
+        package_id: {
+            type: Sequelize.INTEGER,
+            allowNull: true,
+        },
+        status_id: {
             type: Sequelize.INTEGER,
             allowNull: true,
         },

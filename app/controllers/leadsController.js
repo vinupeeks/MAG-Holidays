@@ -27,7 +27,9 @@ exports.leadsList = async (req, res) => {
             ticket_type,
             assigned_to,
             leader,
-            lead_status
+            lead_status,
+            package_id,
+            status_id
         } = searchParams;
 
         if (first_name) whereCondition.first_name = { [Op.like]: `%${first_name}%` };
@@ -40,6 +42,8 @@ exports.leadsList = async (req, res) => {
         if (assigned_to) whereCondition.assigned_to = assigned_to;
         if (leader) whereCondition.leader = leader;
         if (lead_status) whereCondition.lead_status = lead_status;
+        if (package_id) whereCondition.package_id = package_id;
+        if (status_id) whereCondition.status_id = status_id;
 
         let includeOption = null;
 

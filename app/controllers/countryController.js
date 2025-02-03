@@ -4,7 +4,7 @@ const { where, Op } = require('sequelize');
 const Country = db.country;
 
 
-// branch list
+// country list
 exports.countryList = async (req, res) => {
     const { page, size } = req.body;
     const { limit, offset } = getPagination(page, size);
@@ -25,7 +25,7 @@ exports.countryList = async (req, res) => {
     }
 };
 
-// branch creation
+// country creation
 exports.countryCreation = async (req, res) => {
     const { name, code, icon } = req.body;
     const user = req.user;
@@ -45,7 +45,7 @@ exports.countryCreation = async (req, res) => {
     }
 };
 
-// branch details by  branch ID
+// country details by  country ID
 exports.countryDetailsById = async (req, res) => {
     const id = req.params.id;
 
@@ -63,7 +63,7 @@ exports.countryDetailsById = async (req, res) => {
     }
 };
 
-// branch updation by branch ID
+// country updation by country ID
 exports.countryUpdation = async (req, res) => {
     const id = req.params.id;
     const { name, code, icon } = req.body;
@@ -89,7 +89,7 @@ exports.countryUpdation = async (req, res) => {
     }
 };
 
-// branch deletion by branch ID, change status into INACTIVE.
+// country deletion by country ID, change status into INACTIVE.
 exports.countryDeletion = async (req, res) => {
     const id = req.params.id;
     const user = req.user;

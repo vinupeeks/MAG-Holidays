@@ -35,6 +35,8 @@ app.use('/roles', require('./app/routes/rolesRoutes.js'));
 app.use('/branches', require('./app/routes/branchesRoutes.js'));
 app.use('/leads', require('./app/routes/leadsRoutes.js'));
 app.use('/country', require('./app/routes/countryRoutes.js'));
+app.use('/status', require('./app/routes/statusRoutes.js'));
+app.use('/packages', require('./app/routes/packagesRoutes.js'));
 
 app.use('/leads/folowup', require('./app/routes/leadsFollowUpRoutes.js'));
 
