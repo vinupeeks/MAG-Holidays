@@ -5,6 +5,7 @@ const moment = require('moment');
 const Leads = db.leads;
 const User = db.user;
 const Status = db.status;
+const TourPackages = db.tourPackages;
 
 
 // List all leads with pagination 
@@ -29,7 +30,10 @@ exports.leadsList = async (req, res) => {
             leader,
             lead_status,
             package_id,
-            status_id
+            status_id,
+            travel_with_in,
+            travel_from_date,
+            travel_to_date
         } = searchParams;
 
         if (first_name) whereCondition.first_name = { [Op.like]: `%${first_name}%` };
@@ -44,6 +48,9 @@ exports.leadsList = async (req, res) => {
         if (lead_status) whereCondition.lead_status = lead_status;
         if (package_id) whereCondition.package_id = package_id;
         if (status_id) whereCondition.status_id = status_id;
+        if (travel_with_in) whereCondition.travel_with_in = travel_with_in;
+        if (travel_from_date) whereCondition.travel_from_date = travel_from_date;
+        if (travel_to_date) whereCondition.travel_to_date = travel_to_date;
 
         let includeOption = null;
 
@@ -51,7 +58,11 @@ exports.leadsList = async (req, res) => {
             const isAdmin = user_roles.some((role) => role.name === 'ADMIN');
 
             if (isAdmin) {
-                includeOption = [{ model: User, as: 'assignedTo', attributes: ['id', 'username', 'name'] }];
+                includeOption = [
+                    { model: User, as: 'assignedTo', attributes: ['id', 'username', 'name'] },
+                    { model: Status, as: 'statusId', attributes: ['id', 'name', 'label'] },
+                    { model: TourPackages, as: 'packageId', attributes: ['id', 'name', 'place'] }
+                ];
             } else {
                 whereCondition.assigned_to = user;
             }
@@ -62,9 +73,9 @@ exports.leadsList = async (req, res) => {
             order: [['id', 'DESC']],
             where: {
                 ...whereCondition,
-                [Op.or]: [{ mag_id: null }, { leader: 'YES' }]
+                // [Op.or]: [{ mag_id: null }, { leader: 'YES' }]
             },
-            include: includeOption || undefined,
+            include: includeOption || { model: Status, as: 'statusId', attributes: ['id', 'name', 'label'] },
             distinct: true,
         };
 
@@ -83,7 +94,7 @@ exports.leadsList = async (req, res) => {
 
 // creation of leads
 exports.leadsCreation = async (req, res) => {
-    const { first_name, last_name, mobile, age, email, address, lead_status, travel_type, ticket_type, assigned_to } = req.body;
+    const { first_name, last_name, mobile, email, age, address, travel_type, ticket_type, assigned_to, package_id, status_id, travel_with_in, travel_from_date, travel_to_date } = req.body;
     const user = req.user;
 
     try {
@@ -105,10 +116,14 @@ exports.leadsCreation = async (req, res) => {
             travel_type,
             ticket_type,
             assigned_to,
-            lead_status: lead_status,
+            package_id,
+            status_id,
+            travel_with_in,
+            travel_from_date,
+            travel_to_date,
             created_by: user.id,
             updated_by: user.id
-        });
+        }); 
 
         res.status(201).json({ success: true, data: newLead, message: 'User created Successfully..!' });
     } catch (error) {
@@ -129,23 +144,36 @@ exports.leadsDetailsById = async (req, res) => {
                     [Op.eq]: 'ACTIVE',
                 },
             },
-            include: [{
-                model: Status,
-                as: 'leadStatus',
-            }],
+            include: [
+                {
+                    model: User,
+                    as: 'assignedTo',
+                    attributes: ['id', 'name', 'email', 'mobile'],
+                },
+                {
+                    model: TourPackages,
+                    as: 'packageId',
+                    // attributes: ['id', 'name', 'email', 'mobile'],
+                },
+                {
+                    model: Status,
+                    as: 'statusId',
+                    attributes: ['id', 'name', 'label'],
+                }
+            ],
         });
         if (leadDetails === null) {
             return res.status(400).json({ success: false, message: 'Lead not found..!' });
         }
-
         res.status(200).json({ success: true, data: leadDetails, message: 'Lead fetched Successfully..!' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message || 'Error fetching the Lead details..!' });
     }
 };
+
 // leads Updation by Id
 exports.leadsUpdation = async (req, res) => {
-    const { first_name, last_name, mobile, email, age, address, travel_type, ticket_type, assigned_to, lead_status, status } = req.body;
+    const { first_name, last_name, mobile, email, age, address, travel_type, ticket_type, assigned_to, lead_status, status, package_id, status_id, travel_with_in, travel_from_date, travel_to_date } = req.body;
     const id = req.params.id;
     const user = req.user;
 
@@ -183,6 +211,11 @@ exports.leadsUpdation = async (req, res) => {
             ticket_type,
             assigned_to,
             lead_status,
+            package_id: package_id || '',
+            status_id: status_id,
+            travel_with_in: travel_with_in || '',
+            travel_from_date: travel_from_date || '',
+            travel_to_date: travel_to_date || '',
             status,
             updated_by: user.id
         };

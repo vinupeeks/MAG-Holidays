@@ -6,7 +6,7 @@ const User = (sequelize, Sequelize) => {
             autoIncrement: true,
         },
         username: {
-            type: Sequelize.STRING, 
+            type: Sequelize.STRING,
             allowNull: false,
         },
         name: {
@@ -15,15 +15,19 @@ const User = (sequelize, Sequelize) => {
         },
         email: {
             type: Sequelize.STRING,
-            allowNull: false, 
+            allowNull: false,
         },
         mobile: {
-            type: Sequelize.STRING, 
+            type: Sequelize.STRING,
             allowNull: false,
         },
         password: {
             type: Sequelize.STRING,
             allowNull: false,
+        },
+        branch_id: {
+            type: Sequelize.INTEGER,
+            allowNull: true,
         },
         status: {
             type: Sequelize.ENUM(`ACTIVE`, `INACTIVE`, `DELETED`),

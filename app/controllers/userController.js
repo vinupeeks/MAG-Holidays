@@ -4,10 +4,11 @@ const authConfig = require('../config/auth.config');
 const db = require('../models/index');
 const { getPagination, getPagingData } = require('../helpers/pagination');
 const transporter = require('../helpers/nodeMailer');
-const { where, Op } = require('sequelize');
+const { Op } = require('sequelize');
 const User = db.user;
 const UserRoles = db.userRoles;
 const Roles = db.roles;
+const Branch = db.branches;
 
 const generateToken = (id) => {
     return jwt.sign({ id }, authConfig.JWT_SECRET, { expiresIn: '5d' });
@@ -46,7 +47,7 @@ const generateToken = (id) => {
 // };
 // Add a new user
 exports.createUser = async (req, res) => {
-    const { username, name, email, mobile, password, roles } = req.body;
+    const { username, name, email, mobile, password, roles, branch_id } = req.body;
     try {
         const uniqueEmail = await User.findOne({ where: { email } });
         if (uniqueEmail) {
@@ -57,12 +58,18 @@ exports.createUser = async (req, res) => {
             return res.status(400).json({ message: 'Username already taken..!' });
         }
 
+        const branchDetails = await Branch.findOne({ where: { id: branch_id } });
+        if (!branchDetails) {
+            return res.status(400).json({ message: 'Branch not found..!' });
+        };
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = await User.create({
             username,
             name,
             email,
             mobile,
+            branch_id: branch_id || '',
             password: hashedPassword,
             created_by: req.user.id,
             updated_by: req.user.id
@@ -139,6 +146,11 @@ exports.getAllUsers = async (req, res) => {
                     where: filterId,
                     attributes: ['id', 'name', 'label'],
                 },
+                {
+                    model: Branch,
+                    as: 'branchId',
+                    attributes: ['id', 'name', 'location', 'email', 'mobile', 'address'],
+                }
             ],
         };
         const users = await User.findAndCountAll(Searchattributes);
@@ -167,6 +179,11 @@ exports.getUsersWithOutAdmins = async (req, res) => {
                 as: 'roles',
                 where: { name: { [Op.ne]: 'ADMIN' } },
                 attributes: [],
+            },
+            {
+                model: Branch,
+                as: 'branchId',
+                attributes: ['id', 'name', 'location', 'email', 'mobile', 'address'],
             }]
         };
         const users = await User.findAll(Searchattributes);
@@ -181,7 +198,7 @@ exports.getUsersWithOutAdmins = async (req, res) => {
 
 // Update a user
 exports.userUpdate = async function (req, res) {
-    const { username, name, mobile, email, status, roles } = req.body;
+    const { username, name, mobile, email, status, roles, branch_id } = req.body;
     const id = req.params.id;
 
     try {
@@ -217,6 +234,7 @@ exports.userUpdate = async function (req, res) {
             name,
             mobile,
             email,
+            branch_id,
             status: status,
             updated_by: req.user.id,
         };
@@ -268,6 +286,11 @@ exports.getUserById = async (req, res) => {
                     as: 'roles',
                     attributes: ['id', 'name', 'label'],
                 },
+                {
+                    model: Branch,
+                    as: 'branchId',
+                    attributes: ['id', 'name', 'location', 'email', 'mobile', 'address'],
+                }
             ],
         });
         if (!user) {

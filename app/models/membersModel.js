@@ -1,9 +1,13 @@
-const Leads = (sequelize, Sequelize) => {
-    const leads = sequelize.define("leads", {
+const Members = (sequelize, Sequelize) => {
+    const members = sequelize.define("members", {
         id: {
             type: Sequelize.INTEGER,
             primaryKey: true,
             autoIncrement: true,
+        },
+        leader_id: {
+            type: Sequelize.INTEGER,
+            allowNull: false
         },
         first_name: {
             type: Sequelize.STRING,
@@ -53,11 +57,7 @@ const Leads = (sequelize, Sequelize) => {
             type: Sequelize.DATE,
             allowNull: false,
         },
-        leader: {
-            type: Sequelize.ENUM(`YES`, `NO`),
-            defaultValue: `NO`,
-        },
-        lead_status: {
+        member_status: {
             type: Sequelize.ENUM(`HOT`, `WARM`, `COLD`),
             defaultValue: `HOT`,
         },
@@ -85,7 +85,7 @@ const Leads = (sequelize, Sequelize) => {
         {
             timestamps: true,
         });
-    return leads;
+    return members;
 };
 
-module.exports = Leads;
+module.exports = Members;
