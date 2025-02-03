@@ -23,13 +23,16 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-db.user = require('./userModel')(sequelize, Sequelize);
-db.roles = require('./roleModel')(sequelize, Sequelize);
-db.userRoles = require('./userRolesModel')(sequelize, Sequelize);
-db.leads = require('./leadsModel')(sequelize, Sequelize);
 db.branches=require('./brachesModel')(sequelize, Sequelize);
+db.country=require('./countryModel')(sequelize, Sequelize);
 db.leadFollowUp = require('./leadFollowUpModel')(sequelize, Sequelize);
-db.status = require('./statusModel')(sequelize, Sequelize);
+db.leads = require('./leadsModel')(sequelize, Sequelize);
+db.roles = require('./roleModel')(sequelize, Sequelize);
+db.status=require('./statusModel')(sequelize, Sequelize);
+db.tourPackages=require('./tourPackagesModel')(sequelize, Sequelize);
+db.travelType=require('./travelTypeModel')(sequelize, Sequelize);
+db.user = require('./userModel')(sequelize, Sequelize);
+db.userRoles = require('./userRolesModel')(sequelize, Sequelize);
 
  
 // relation of  User Table

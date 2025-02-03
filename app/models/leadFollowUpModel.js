@@ -6,11 +6,7 @@ const LeadsFollowUp = (sequelize, Sequelize) => {
             autoIncrement: true,
         },
         lead_id: {
-            type: Sequelize.INTEGER,
-            references: {
-                model: 'leads',
-                key: 'id'
-            },
+            type: Sequelize.INTEGER, 
             allowNull: false
         },
         lead_status: {

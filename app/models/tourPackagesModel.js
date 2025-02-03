@@ -50,7 +50,7 @@ const TourPackages = (sequelize, Sequelize) => {
             timestamps: true,
             uniqueKeys: {
                 uniquetourPackages: {
-                    fields: ['lead_id', 'created_by', 'updated_by']
+                    fields: ['created_by', 'updated_by']
                 }
             }
         });
