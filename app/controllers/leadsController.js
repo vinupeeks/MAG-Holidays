@@ -233,7 +233,7 @@ exports.leadsUpdation = async (req, res) => {
         res.status(500).json({ success: false, message: error.message || 'Lead updation error..!' });
     }
 };
-
+ 
 // leads Deletion by Id
 exports.leadsDeletion = async (req, res) => {
     const id = req.params.id;
@@ -261,16 +261,63 @@ exports.leadsDeletion = async (req, res) => {
 
 // // Group Leads creation
 exports.groupLeadsCreation = async (req, res) => {
-    const leadsList = req.body.leads;
+    const leadsList = req.body;
     const user = req.user;
 
     try {
         if (!Array.isArray(leadsList) || leadsList.length === 0) {
             return res.status(400).json({ message: "Invalid leads data." });
         }
+
         const leaderData = leadsList.find(lead => lead.leader === "YES");
         if (!leaderData) {
             return res.status(400).json({ message: "No leader found in the provided leads." });
+        }
+
+        const membersData = leadsList.filter(lead => lead.leader !== "YES");
+        const existingLeader = await Leads.findOne({
+            where: {
+                [Op.or]: [
+                    { email: leaderData.email },
+                    { mobile: leaderData.mobile }
+                ]
+            }
+        });
+
+        if (existingLeader) {
+            let errorMessage = "Leader data conflict:";
+            if (existingLeader.email === leaderData.email) {
+                errorMessage += ` Email '${leaderData.email}' is already taken.`;
+            }
+            if (existingLeader.mobile === leaderData.mobile) {
+                errorMessage += ` Mobile '${leaderData.mobile}' is already taken.`;
+            }
+            return res.status(400).json({ success: false, message: errorMessage });
+        }
+
+        const memberEmails = membersData.map(member => member.email);
+        const memberMobiles = membersData.map(member => member.mobile);
+
+        const existingMembers = await Members.findAll({
+            where: {
+                [Op.or]: [
+                    { email: { [Op.in]: memberEmails } },
+                    { mobile: { [Op.in]: memberMobiles } }
+                ]
+            }
+        });
+        if (existingMembers.length > 0) {
+            let existingEmails = existingMembers.map(mem => mem.email).filter(email => memberEmails.includes(email));
+            let existingMobiles = existingMembers.map(mem => mem.mobile).filter(mobile => memberMobiles.includes(mobile));
+
+            let errorMessage = "Member data conflict:";
+            if (existingEmails.length > 0) {
+                errorMessage += ` Emails (${existingEmails.join(", ")}) are already taken.`;
+            }
+            if (existingMobiles.length > 0) {
+                errorMessage += ` Mobile numbers (${existingMobiles.join(", ")}) are already taken.`;
+            }
+            return res.status(400).json({ success: false, message: errorMessage });
         }
 
         const leader = await Leads.create({
@@ -278,17 +325,16 @@ exports.groupLeadsCreation = async (req, res) => {
             created_by: user.id,
             updated_by: user.id
         });
-        const membersData = leadsList.filter(lead => lead.leader !== "YES");
 
-        const members = membersData.map(member => ({
+        const membersToCreate = membersData.map(member => ({
             ...member,
             leader_id: leader.id,
             created_by: user.id,
             updated_by: user.id
         }));
 
-        if (members.length > 0) {
-            await Members.bulkCreate(members);
+        if (membersToCreate.length > 0) {
+            await Members.bulkCreate(membersToCreate);
         }
         return res.status(201).json({ success: true, message: "Leads and members saved successfully." });
     } catch (error) {
