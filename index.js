@@ -38,6 +38,7 @@ app.use('/members', require('./app/routes/membersRoutes.js'));
 app.use('/country', require('./app/routes/countryRoutes.js'));
 app.use('/status', require('./app/routes/statusRoutes.js'));
 app.use('/packages', require('./app/routes/packagesRoutes.js'));
+app.use('/travelTypes', require('./app/routes/travelTypesRoutes.js'));
 
 app.use('/leads/folowup', require('./app/routes/leadsFollowUpRoutes.js'));
 

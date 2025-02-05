@@ -6,7 +6,7 @@ const Status = db.status;
 const Members = db.members; 
 
 
-// List all leads with pagination 
+// List all Members with pagination 
 exports.membersList = async (req, res) => {
     const leaderId = req.params.id;
 
@@ -31,7 +31,7 @@ exports.membersList = async (req, res) => {
     }
 };
 
-// leads details by Id
+// Member details by Id
 exports.membersDetailsById = async (req, res) => {
     const id = req.params.id;
 
@@ -42,7 +42,7 @@ exports.membersDetailsById = async (req, res) => {
             },
             include: [{
                 model: Leads,
-                as: 'leaderId',
+                as: 'leadId',
                 attributes: ['id', 'first_name', 'last_name', 'email', 'mobile'],
             },
             {
@@ -60,7 +60,7 @@ exports.membersDetailsById = async (req, res) => {
     }
 };
 
-// leads Updation by Id
+// Member Updation by Id
 exports.membersUpdation = async (req, res) => {
     const { lead_id, travel_details_id, first_name, last_name, mobile, email, age, address, assigned_to, member_status, status_id, status } = req.body;
     const id = req.params.id;
@@ -113,7 +113,7 @@ exports.membersUpdation = async (req, res) => {
     }
 };
 
-// leads Deletion by Id
+// Member Deletion by Id
 exports.membersDeletion = async (req, res) => {
     const id = req.params.id;
     const user = req.user;

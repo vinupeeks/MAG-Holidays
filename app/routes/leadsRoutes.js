@@ -8,14 +8,14 @@ router.post('/list', protectJWT, leadsController.leadsList);
 
 router.post('/creation', protectJWT, leadsController.leadsCreation);
 
-router.post('/creation/group', protectJWT, leadsController.groupLeadsCreation);
-
-router.get('/group/members/:id', protectJWT, leadsController.getGroupMembers);
-
 router.get('/details/:id', protectJWT, leadsController.leadsDetailsById);
 
 router.put('/edit/:id', protectJWT, leadsController.leadsUpdation);
 
 router.delete('/delete/:id', protectJWT, leadsController.leadsDeletion);
+
+router.post('/creation/group', protectJWT, leadsController.groupLeadsCreation);
+
+router.get('/group/members/:id', protectJWT, leadsController.getGroupMembers);
 
 module.exports = router;

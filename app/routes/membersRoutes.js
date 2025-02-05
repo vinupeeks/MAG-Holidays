@@ -8,8 +8,8 @@ router.get('/leader/:id', membersController.membersList);
 
 router.get('/details/:id', membersController.membersDetailsById);
 
-router.delete('/delete/:id', protectJWT, membersController.membersDeletion);
-
 router.put('/edit/:id', protectJWT, membersController.membersUpdation);
+
+router.delete('/delete/:id', protectJWT, membersController.membersDeletion);
 
 module.exports = router;

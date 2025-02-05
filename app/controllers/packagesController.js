@@ -27,14 +27,14 @@ exports.packagesList = async (req, res) => {
 
 // TourPackages creation
 exports.packagesCreation = async (req, res) => {
-    const { name, place, date, highlights, day, night, amount } = req.body;
+    const { name, place, type, highlights, day, night, amount } = req.body;
     const user = req.user;
 
     try {
         const newTourPackage = await TourPackages.create({
             name,
             place,
-            date,
+            type,
             highlights,
             day,
             night,
@@ -70,7 +70,7 @@ exports.packagesDetailsById = async (req, res) => {
 // TourPackages updation by TourPackages ID
 exports.packagesUpdation = async (req, res) => {
     const id = req.params.id;
-    const { name, place, date, highlights, day, night, amount } = req.body;
+    const { name, place, type, highlights, day, night, amount } = req.body;
     const user = req.user;
 
     try {
@@ -82,7 +82,7 @@ exports.packagesUpdation = async (req, res) => {
         const updateData = {
             name,
             place,
-            date,
+            type,
             highlights,
             day,
             night,

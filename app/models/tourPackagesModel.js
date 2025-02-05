@@ -7,31 +7,31 @@ const TourPackages = (sequelize, Sequelize) => {
         },
         name: {
             type: Sequelize.STRING,
-            allowNull: false
+            allowNull: true
         },
         place: {
             type: Sequelize.STRING,
-            allowNull: false
-        },
-        date: {
-            type: Sequelize.DATE,
-            allowNull: false,
+            allowNull: true
         },
         highlights: {
             type: Sequelize.STRING,
-            allowNull: false
+            allowNull: true
         },
         day: {
             type: Sequelize.INTEGER,
-            allowNull: false
+            allowNull: true
         },
         night: {
             type: Sequelize.INTEGER,
+            allowNull: true
+        },
+        type: {
+            type: Sequelize.ENUM(`International`, `Domestic`),
             allowNull: false
         },
         amount: {
             type: Sequelize.STRING,
-            allowNull: false
+            allowNull: true
         },
         status: {
             type: Sequelize.ENUM(`ACTIVE`, `INACTIVE`, `DELETED`),
@@ -47,7 +47,7 @@ const TourPackages = (sequelize, Sequelize) => {
         },
     },
         {
-            timestamps: true, 
+            timestamps: true,
         });
     return tourPackages;
 };

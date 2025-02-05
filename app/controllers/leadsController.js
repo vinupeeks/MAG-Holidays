@@ -1,7 +1,6 @@
 const { Op } = require('sequelize');
 const db = require('../models/index');
-const { getPagination, getPagingData } = require('../helpers/pagination');
-const moment = require('moment');
+const { getPagination, getPagingData } = require('../helpers/pagination'); 
 const Leads = db.leads;
 const User = db.user;
 const Status = db.status;
@@ -21,22 +20,15 @@ exports.leadsList = async (req, res) => {
         const user_roles = req.user_roles;
 
         const whereCondition = { status: 'ACTIVE' };
+        const travelWhereCondition = {};
+
         const {
-            first_name,
-            mobile,
-            email,
-            age,
-            address,
-            travel_type,
-            ticket_type,
-            assigned_to,
-            leader,
-            lead_status,
-            package_id,
-            status_id,
-            travel_with_in,
-            travel_from_date,
-            travel_to_date
+            first_name, mobile, email, age, address,
+            assigned_to, leader, lead_status, status_id,
+
+            travel_type, ticket_type, package_id, travel_with_in,
+            travel_from_date, travel_to_date
+
         } = searchParams;
 
         if (first_name) whereCondition.first_name = { [Op.like]: `%${first_name}%` };
@@ -44,43 +36,56 @@ exports.leadsList = async (req, res) => {
         if (email) whereCondition.email = { [Op.like]: `%${email}%` };
         if (age) whereCondition.age = age;
         if (address) whereCondition.address = { [Op.like]: `%${address}%` };
-        if (travel_type) whereCondition.travel_type = travel_type;
-        if (ticket_type) whereCondition.ticket_type = ticket_type;
         if (assigned_to) whereCondition.assigned_to = assigned_to;
         if (leader) whereCondition.leader = leader;
         if (lead_status) whereCondition.lead_status = lead_status;
-        if (package_id) whereCondition.package_id = package_id;
         if (status_id) whereCondition.status_id = status_id;
-        if (travel_with_in) whereCondition.travel_with_in = travel_with_in;
-        if (travel_from_date) whereCondition.travel_from_date = travel_from_date;
-        if (travel_to_date) whereCondition.travel_to_date = travel_to_date;
 
-        let includeOption = null;
+        if (travel_type) travelWhereCondition.travel_type = travel_type;
+        if (ticket_type) travelWhereCondition.ticket_type = ticket_type;
+        if (package_id) travelWhereCondition.package_id = package_id;
+        if (travel_with_in) travelWhereCondition.travel_with_in = travel_with_in;
+
+        if (travel_from_date && travel_from_date.start && travel_from_date.end) {
+            travelWhereCondition.travel_from_date = {
+                [Op.gte]: travel_from_date.start,
+                [Op.lte]: `${travel_from_date.end}T23:59:59.999Z`
+            };
+        }
+        if (travel_to_date && travel_to_date.start && travel_to_date.end) {
+            travelWhereCondition.travel_to_date = {
+                [Op.gte]: travel_to_date.start,
+                [Op.lte]: `${travel_to_date.end}T23:59:59.999Z`
+            };
+        }
+        let includeOption = [
+            { model: User, as: 'assignedTo', attributes: ['id', 'username', 'name'] },
+            { model: Status, as: 'statusId', attributes: ['id', 'name', 'label'] }
+        ];
+
+        if (Object.keys(travelWhereCondition).length > 0) {
+            includeOption.push({
+                model: TravelDetails,
+                required: true,
+                where: travelWhereCondition,
+                include: [
+                    { model: TravelType, as: 'travelId', attributes: ['id', 'name'] },
+                    { model: TourPackages, as: 'packageId', attributes: ['id', 'name', 'place'] }
+                ],
+            });
+        } else {
+            includeOption.push({
+                model: TravelDetails,
+                include: [
+                    { model: TravelType, as: 'travelId', attributes: ['id', 'name'] },
+                    { model: TourPackages, as: 'packageId', attributes: ['id', 'name', 'place'] }
+                ],
+            });
+        }
 
         if (user_roles && user_roles.length > 0) {
             const isAdmin = user_roles.some((role) => role.name === 'ADMIN');
-
-            if (isAdmin) {
-                includeOption = [
-                    { model: User, as: 'assignedTo', attributes: ['id', 'username', 'name'] },
-                    { model: Status, as: 'statusId', attributes: ['id', 'name', 'label'] },
-                    {
-                        model: TravelDetails,
-                        include: [
-                            {
-                                model: TravelType,
-                                as: 'travelId',
-                                attributes: ['id', 'name'],
-                            },
-                            {
-                                model: TourPackages,
-                                as: 'packageId',
-                                attributes: ['id', 'name', 'place']
-                            },
-                        ],
-                    },
-                ];
-            } else {
+            if (!isAdmin) {
                 whereCondition.assigned_to = user;
             }
         }
@@ -88,19 +93,15 @@ exports.leadsList = async (req, res) => {
         Searchattributes = {
             ...Searchattributes,
             order: [['id', 'DESC']],
-            where: {
-                ...whereCondition,
-                // [Op.or]: [{ mag_id: null }, { leader: 'YES' }]
-            },
-            include: includeOption || { model: Status, as: 'statusId', attributes: ['id', 'name', 'label'] },
+            where: whereCondition,
+            include: includeOption,
             distinct: true,
         };
-
         const leads = await Leads.findAndCountAll(Searchattributes);
+
         if (!leads.rows || leads.rows.length === 0) {
             return res.status(400).json({ success: false, message: 'No Leads found..!' });
         }
-
         const response = getPagingData(leads, page, limit);
         res.status(200).json({ success: true, data: response, message: 'Leads fetched Successfully..!' });
     } catch (error) {
@@ -460,6 +461,7 @@ exports.getGroupMembers = async (req, res) => {
         if (leaderDetails === null || !leaderDetails.leader === 'YES') {
             return res.status(400).json({ success: false, message: "The provided leaderId is not a leader" });
         }
+
         const members = await Members.findAndCountAll({ where: { lead_id: leaderId } });
         if (members.length === 0) {
             return res.status(404).json({ success: false, message: "No members found for this leader" });
