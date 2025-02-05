@@ -1,4 +1,4 @@
-const { where, Op } = require('sequelize');
+const { Op } = require('sequelize');
 const db = require('../models/index');
 const { getPagination, getPagingData } = require('../helpers/pagination');
 const moment = require('moment');
@@ -7,6 +7,8 @@ const User = db.user;
 const Status = db.status;
 const TourPackages = db.tourPackages;
 const Members = db.members;
+const TravelDetails = db.travelDetails;
+const TravelType = db.travelType;
 
 
 // List all leads with pagination 
@@ -62,7 +64,21 @@ exports.leadsList = async (req, res) => {
                 includeOption = [
                     { model: User, as: 'assignedTo', attributes: ['id', 'username', 'name'] },
                     { model: Status, as: 'statusId', attributes: ['id', 'name', 'label'] },
-                    { model: TourPackages, as: 'packageId', attributes: ['id', 'name', 'place'] }
+                    {
+                        model: TravelDetails,
+                        include: [
+                            {
+                                model: TravelType,
+                                as: 'travelId',
+                                attributes: ['id', 'name'],
+                            },
+                            {
+                                model: TourPackages,
+                                as: 'packageId',
+                                attributes: ['id', 'name', 'place']
+                            },
+                        ],
+                    },
                 ];
             } else {
                 whereCondition.assigned_to = user;
@@ -114,19 +130,26 @@ exports.leadsCreation = async (req, res) => {
             email,
             age,
             address,
-            travel_type,
-            ticket_type,
             assigned_to,
-            package_id,
             status_id,
-            travel_with_in,
-            travel_from_date,
-            travel_to_date,
             created_by: user.id,
             updated_by: user.id
         });
+        const lead_id = newLead.id;
+        const newTravelDetails = await TravelDetails.create({
+            lead_id,
+            travel_type,
+            ticket_type,
+            travel_with_in,
+            travel_from_date,
+            travel_to_date,
+            package_id,
+            created_by: user.id,
+            updated_by: user.id
+        })
+        const mergedData = { ...newLead, ...newTravelDetails }
 
-        res.status(201).json({ success: true, data: newLead, message: 'User created Successfully..!' });
+        res.status(201).json({ success: true, data: mergedData, message: 'User created Successfully..!' });
     } catch (error) {
         console.error('User creation error:', error);
         res.status(500).json({ success: false, message: error.message || 'User creation error..!' });
@@ -152,13 +175,23 @@ exports.leadsDetailsById = async (req, res) => {
                     attributes: ['id', 'name', 'email', 'mobile'],
                 },
                 {
-                    model: TourPackages,
-                    as: 'packageId',
-                },
-                {
                     model: Status,
                     as: 'statusId',
                     attributes: ['id', 'name', 'label'],
+                },
+                {
+                    model: TravelDetails,
+                    include: [
+                        {
+                            model: TravelType,
+                            as: 'travelId',
+                            attributes: ['id', 'name', 'label'],
+                        },
+                        {
+                            model: TourPackages,
+                            as: 'packageId',
+                        },
+                    ],
                 },
                 {
                     model: Members,
@@ -176,33 +209,38 @@ exports.leadsDetailsById = async (req, res) => {
 
 // leads Updation by Id
 exports.leadsUpdation = async (req, res) => {
-    const { first_name, last_name, mobile, email, age, address, travel_type, ticket_type, assigned_to, lead_status, status, package_id, status_id, travel_with_in, travel_from_date, travel_to_date } = req.body;
+    const { first_name, last_name, mobile, email, age, address, leader, travel_type,
+        ticket_type, assigned_to, lead_status, status, package_id, status_id, travel_with_in,
+        travel_from_date, travel_to_date } = req.body;
     const id = req.params.id;
     const user = req.user;
 
+    const transaction = await db.sequelize.transaction();
+
     try {
-        const userData = await Leads.findByPk(id);
+        const userData = await Leads.findByPk(id, { transaction });
+
         if (!userData) {
+            await transaction.rollback();
             return res.status(404).json({ success: false, message: 'User not found..!' });
         }
+
         if (email) {
-            const existingEmail = await Leads.findOne({ where: { email: email } });
-            if (existingEmail && existingEmail.id !== parseInt(id)) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'The email already exist, provide another one..!',
-                });
+            const existingEmail = await Leads.findOne({ where: { email, id: { [Op.ne]: id } }, transaction });
+            if (existingEmail) {
+                await transaction.rollback();
+                return res.status(400).json({ success: false, message: 'The email already exists, provide another one..!' });
             }
         }
+
         if (mobile) {
-            const existingMobile = await Leads.findOne({ where: { mobile: mobile } });
-            if (existingMobile && existingMobile.id !== parseInt(id)) {
-                return res.status(404).json({
-                    success: false,
-                    message: 'The phone number already exist, provide another one..!',
-                });
+            const existingMobile = await Leads.findOne({ where: { mobile, id: { [Op.ne]: id } }, transaction });
+            if (existingMobile) {
+                await transaction.rollback();
+                return res.status(400).json({ success: false, message: 'The phone number already exists, provide another one..!' });
             }
         }
+
         const updateData = {
             first_name,
             last_name,
@@ -210,30 +248,59 @@ exports.leadsUpdation = async (req, res) => {
             email,
             age,
             address,
-            travel_type,
-            ticket_type,
             assigned_to,
+            leader,
             lead_status,
-            package_id: package_id || '',
             status_id: status_id,
-            travel_with_in: travel_with_in || '',
-            travel_from_date: travel_from_date || '',
-            travel_to_date: travel_to_date || '',
             status,
-            updated_by: user.id
+            updated_by: user.id,
         };
-        const [updatedRows] = await Leads.update(updateData, { where: { id } });
+
+        const [updatedRows] = await Leads.update(updateData, { where: { id }, transaction });
         if (!updatedRows) {
+            await transaction.rollback();
             return res.status(400).json({ success: false, message: 'Update failed..!' });
         }
-        const leadDetails = await Leads.findByPk(id);
+
+        if (travel_type || ticket_type || package_id || travel_with_in || travel_from_date || travel_to_date) {
+            const travelUpdateData = {
+                travel_type,
+                ticket_type,
+                package_id: package_id || '',
+                travel_with_in: travel_with_in || '',
+                travel_from_date: travel_from_date || '',
+                travel_to_date: travel_to_date || '',
+                updated_by: user.id,
+            };
+            const existingTravel = await TravelDetails.findOne({ where: { lead_id: id }, transaction });
+
+            if (existingTravel) {
+                await TravelDetails.update(travelUpdateData, { where: { lead_id: id }, transaction });
+            } else {
+                await TravelDetails.create({ ...travelUpdateData, lead_id: id }, { transaction });
+            }
+        }
+        if (lead_status || status_id || assigned_to || status) {
+            const data = {
+                assigned_to,
+                member_status: lead_status,
+                status_id,
+                status
+            }
+            const memberStatusUpdation = await Members.update(data, { where: { lead_id: id }, transaction });
+        }
+        await transaction.commit();
+        const leadDetails = await Leads.findByPk(id, { include: TravelDetails });
+
         res.status(201).json({ success: true, data: leadDetails, message: 'Lead updated Successfully..!' });
     } catch (error) {
-        console.error('Lead updation error:', error);
+        await transaction.rollback();
+        console.log(error);
+
         res.status(500).json({ success: false, message: error.message || 'Lead updation error..!' });
     }
 };
- 
+
 // leads Deletion by Id
 exports.leadsDeletion = async (req, res) => {
     const id = req.params.id;
@@ -263,6 +330,7 @@ exports.leadsDeletion = async (req, res) => {
 exports.groupLeadsCreation = async (req, res) => {
     const leadsList = req.body;
     const user = req.user;
+    const t = await db.sequelize.transaction();
 
     try {
         if (!Array.isArray(leadsList) || leadsList.length === 0) {
@@ -278,10 +346,10 @@ exports.groupLeadsCreation = async (req, res) => {
         const existingLeader = await Leads.findOne({
             where: {
                 [Op.or]: [
-                    { email: leaderData.email },
-                    { mobile: leaderData.mobile }
-                ]
-            }
+                    { email: leaderData.email }, { mobile: leaderData.mobile }
+                ],
+            },
+            transaction: t
         });
 
         if (existingLeader) {
@@ -301,10 +369,10 @@ exports.groupLeadsCreation = async (req, res) => {
         const existingMembers = await Members.findAll({
             where: {
                 [Op.or]: [
-                    { email: { [Op.in]: memberEmails } },
-                    { mobile: { [Op.in]: memberMobiles } }
-                ]
-            }
+                    { email: { [Op.in]: memberEmails } }, { mobile: { [Op.in]: memberMobiles } }
+                ],
+            },
+            transaction: t
         });
         if (existingMembers.length > 0) {
             let existingEmails = existingMembers.map(mem => mem.email).filter(email => memberEmails.includes(email));
@@ -320,27 +388,65 @@ exports.groupLeadsCreation = async (req, res) => {
             return res.status(400).json({ success: false, message: errorMessage });
         }
 
-        const leader = await Leads.create({
-            ...leaderData,
+
+        const newLead = await Leads.create({
+            first_name: leaderData.first_name,
+            last_name: leaderData.last_name,
+            mobile: leaderData.mobile,
+            email: leaderData.email,
+            age: leaderData.age,
+            address: leaderData.address,
+            assigned_to: leaderData.assigned_to,
+            leader: leaderData.leader,
+            status_id: leaderData.status_id,
             created_by: user.id,
             updated_by: user.id
-        });
+        },
+            { transaction: t }
+        );
+
+        const newTravelDetails = await TravelDetails.create({
+            lead_id: newLead.id,
+            travel_type: leaderData.travel_type,
+            ticket_type: leaderData.ticket_type,
+            travel_with_in: leaderData.travel_with_in,
+            travel_from_date: leaderData.travel_from_date,
+            travel_to_date: leaderData.travel_to_date,
+            package_id: leaderData.package_id || null,
+            created_by: user.id,
+            updated_by: user.id
+        },
+            { transaction: t }
+        )
 
         const membersToCreate = membersData.map(member => ({
-            ...member,
-            leader_id: leader.id,
+            lead_id: newLead.id,
+            travel_details_id: newTravelDetails.id,
+            first_name: member.first_name,
+            last_name: member.last_name,
+            mobile: member.mobile,
+            email: member.email,
+            age: member.age || null,
+            address: member.address || null,
+            assigned_to: member.assigned_to || null,
+            member_status: member.member_status || "HOT",
+            status_id: member.status_id || null,
+            status: member.status || "ACTIVE",
             created_by: user.id,
             updated_by: user.id
         }));
-
         if (membersToCreate.length > 0) {
-            await Members.bulkCreate(membersToCreate);
+            await Members.bulkCreate(membersToCreate, { transaction: t });
         }
+        await t.commit();
+
         return res.status(201).json({ success: true, message: "Leads and members saved successfully." });
     } catch (error) {
+        await t.rollback();
         res.status(500).json({ success: false, message: error.message || 'Error saving group list..!' });
     }
 };
+
 
 // group members list using leader ID
 exports.getGroupMembers = async (req, res) => {
@@ -348,15 +454,15 @@ exports.getGroupMembers = async (req, res) => {
 
     try {
         if (!leaderId) {
-            return res.status(400).json({ message: "leaderId is required" });
+            return res.status(400).json({ success: false, message: "leaderId is required" });
         }
         const leaderDetails = await Leads.findOne({ where: { id: leaderId } });
-        if (!leaderDetails.leader === 'YES') {
-            return res.status(400).json({ message: "The provided leaderId is not a leader" });
+        if (leaderDetails === null || !leaderDetails.leader === 'YES') {
+            return res.status(400).json({ success: false, message: "The provided leaderId is not a leader" });
         }
-        const members = await Members.findAndCountAll({ where: { leader_id: leaderId } });
+        const members = await Members.findAndCountAll({ where: { lead_id: leaderId } });
         if (members.length === 0) {
-            return res.status(404).json({ message: "No members found for this leader" });
+            return res.status(404).json({ success: false, message: "No members found for this leader" });
         }
 
         res.status(201).json({ success: true, data: members, message: 'Leads members fetched successfully..!' });

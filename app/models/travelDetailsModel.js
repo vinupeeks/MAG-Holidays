@@ -1,5 +1,5 @@
-const Members = (sequelize, Sequelize) => {
-    const members = sequelize.define("members", {
+const TravelDetails = (sequelize, Sequelize) => {
+    const travelDetails = sequelize.define("travelDetails", {
         id: {
             type: Sequelize.INTEGER,
             primaryKey: true,
@@ -7,45 +7,29 @@ const Members = (sequelize, Sequelize) => {
         },
         lead_id: {
             type: Sequelize.INTEGER,
-            allowNull: false
+            allowNull: true
         },
-        travel_details_id: {
-            type: Sequelize.INTEGER,
-            allowNull: false
-        },
-        first_name: {
-            type: Sequelize.STRING,
-            allowNull: false,
-        },
-        last_name: {
-            type: Sequelize.STRING,
-            allowNull: false,
-        },
-        mobile: {
-            type: Sequelize.STRING,
-            allowNull: false,
-        },
-        email: {
-            type: Sequelize.STRING,
-            allowNull: false,
-        },
-        age: {
+        travel_type: {
             type: Sequelize.INTEGER,
             allowNull: true,
         },
-        address: {
-            type: Sequelize.STRING,
-            allowNull: true,
-        }, 
-        assigned_to: {
-            type: Sequelize.INTEGER,
-            allowNull: true,
+        ticket_type: {
+            type: Sequelize.ENUM(`Both`, `Ticket_only`, `Visa_only`),
+            defaultValue: `Both`,
         },
-        member_status: {
-            type: Sequelize.ENUM(`HOT`, `WARM`, `COLD`),
-            defaultValue: `HOT`,
-        }, 
-        status_id: {
+        travel_with_in: {
+            type: Sequelize.STRING,
+            allowNull: false,
+        },
+        travel_from_date: {
+            type: Sequelize.DATE,
+            allowNull: false,
+        },
+        travel_to_date: {
+            type: Sequelize.DATE,
+            allowNull: false,
+        },
+        package_id: {
             type: Sequelize.INTEGER,
             allowNull: true,
         },
@@ -65,7 +49,7 @@ const Members = (sequelize, Sequelize) => {
         {
             timestamps: true,
         });
-    return members;
+    return travelDetails;
 };
 
-module.exports = Members;
+module.exports = TravelDetails;

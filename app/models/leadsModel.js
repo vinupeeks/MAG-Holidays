@@ -29,29 +29,9 @@ const Leads = (sequelize, Sequelize) => {
             type: Sequelize.STRING,
             allowNull: true,
         },
-        travel_type: {
-            type: Sequelize.INTEGER,
-            allowNull: true,
-        },
-        ticket_type: {
-            type: Sequelize.ENUM(`Both`, `Ticket_only`, `Visa_only`),
-            defaultValue: `Both`,
-        },
         assigned_to: {
             type: Sequelize.INTEGER,
             allowNull: true,
-        },
-        travel_with_in: {
-            type: Sequelize.STRING,
-            allowNull: false,
-        },
-        travel_from_date: {
-            type: Sequelize.DATE,
-            allowNull: false,
-        },
-        travel_to_date: {
-            type: Sequelize.DATE,
-            allowNull: false,
         },
         leader: {
             type: Sequelize.ENUM(`YES`, `NO`),
@@ -60,10 +40,6 @@ const Leads = (sequelize, Sequelize) => {
         lead_status: {
             type: Sequelize.ENUM(`HOT`, `WARM`, `COLD`),
             defaultValue: `HOT`,
-        },
-        package_id: {
-            type: Sequelize.INTEGER,
-            allowNull: true,
         },
         status_id: {
             type: Sequelize.INTEGER,
